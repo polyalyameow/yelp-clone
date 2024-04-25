@@ -1,19 +1,31 @@
 require('dotenv').config();
 const express = require('express');
+const db = require("./db");
+
 const app = express();
 
 // middleware
-app.use(express.json); 
+app.use(express.json()); 
 
 
 // get all restaurants
-app.get("/api/v1/restaurants", (req, res) => {
-    res.status(200).json({
-        status: "success", 
-        data: {
-            restaurants: ["Mcdonalds", "Wendys"]
-        }
-    });
+app.get("/api/v1/restaurants", async (req, res) => {
+    try {
+        const results = await db.query('SELECT * FROM restaurants');
+        console.log(results);
+        res.status(200).json({
+            status: "success", 
+            data: {
+                restaurants: results.rows // Assuming results is a pg.QueryResult object
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching restaurants:", error);
+        res.status(500).json({
+            status: "error",
+            message: "An error occurred while fetching restaurants"
+        });
+    }
 })
 
 // get a specific restaurant
