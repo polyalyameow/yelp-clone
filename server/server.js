@@ -5,7 +5,7 @@ const db = require("./db");
 const app = express();
 
 // middleware
-app.use(express.json()); 
+app.use(express.json());
 
 
 // get all restaurants
@@ -14,9 +14,10 @@ app.get("/api/v1/restaurants", async (req, res) => {
         const results = await db.query('SELECT * FROM restaurants');
         console.log(results);
         res.status(200).json({
-            status: "success", 
+            status: "success",
+            results: results.rows.length,
             data: {
-                restaurants: results.rows // Assuming results is a pg.QueryResult object
+                restaurants: results.rows
             }
         });
     } catch (error) {
@@ -29,49 +30,86 @@ app.get("/api/v1/restaurants", async (req, res) => {
 })
 
 // get a specific restaurant
-app.get("/api/v1/restaurants/:id", (req, res) => {
-    console.log(req.params)
-
-    res.status(200).json({
-        status: "success",
-        data: {
-            restaurant: "Wendys"
-        }
-    })
+app.get("/api/v1/restaurants/:id", async (req, res) => {
+    console.log(req.params.id)
+    try {
+        const results = await db.query("SELECT * FROM restaurants WHERE id = $1", [req.params.id]);
+        console.log(results)
+        res.status(200).json({
+            status: "success",
+            data: {
+                restaurant: results.rows[0]
+            }
+        })
+    } catch (error) {
+        console.error("Error fetching restaurants:", error);
+        res.status(500).json({
+            status: "error",
+            message: "An error occurred while fetching restaurants"
+        });
+    }
 })
 
 //create a new restaurant
-app.post("/api/v1/restaurants", (req, res) => {
-    console.log(req.body)
+app.post("/api/v1/restaurants", async (req, res) => {
 
-    res.status(201).json({
-        status: "success",
-        data: {
-            restaurant: "Pizza Hut"
-        }
-    })
+    console.log(req.body)
+    try {
+        const results = await db.query("INSERT INTO restaurants (name, location, price_range) values ($1, $2, $3) returning *", [req.body.name, req.body.location, req.body.price_range])
+        res.status(201).json({
+            status: "success",
+            data: {
+                restaurant: results.rows
+            }
+        })
+    } catch (error) {
+        console.error("Error fetching restaurants:", error);
+        res.status(500).json({
+            status: "error",
+            message: "An error occurred while fetching restaurants"
+        });
+    }
 })
 
 // update an existing restaurang
-app.put("/api/v1/restaurants/:id", (req, res) => {
+app.put("/api/v1/restaurants/:id", async (req, res) => {
     console.log(req.params.id)
     console.log(req.body)
-
-    res.status(200).json({
-        status: "success",
-        data: {
-            restaurant: "Wendys"
-        }
-    })
+    const results = await db.query("UPDATE restaurants SET name = $1, location = $2, price_range = $3 WHERE id = $4 returning *", [req.body.name, req.body.location, req.body.price_range, req.params.id])
+    try {
+        res.status(200).json({
+            status: "success",
+            data: {
+                restaurant: results.rows
+            }
+        })
+    }
+    catch (error) {
+        console.error("Error fetching restaurants:", error);
+        res.status(500).json({
+            status: "error",
+            message: "An error occurred while fetching restaurants"
+        });
+    }
 })
 
 
 // delete a specific restaurant
-app.delete("/api/v1/restaurants/:id", (req, res) => {
+app.delete("/api/v1/restaurants/:id", async (req, res) => {
 
-    res.status(204).json({
-        status: "success"
-    })
+    try {
+        const result = await db.query("DELETE FROM restaurants WHERE id = $1", [req.params.id])
+        res.status(204).json({
+            status: "success"
+        })
+}
+catch (error) {
+    console.error("Error fetching restaurants:", error);
+        res.status(500).json({
+            status: "error",
+            message: "An error occurred while fetching restaurants"
+        });
+}
 })
 
 
